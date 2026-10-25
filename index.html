@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Micro Review Challenge</title>
+<style>
+  :root{
+    --bg:#0b1d3a; --bg2:#12305e; --gold:#fbbf24; --text:#ffffff; --muted:#c7d2fe;
+    --good:#22c55e; --bad:#ef4444; --card:#f8fafc; --ink:#0f172a; --blue:#1d4ed8;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;min-height:100%}
+  body{background:radial-gradient(circle at top,var(--bg2),var(--bg));color:var(--text);min-height:100vh;
+    font-family:"Trebuchet MS","Segoe UI",Arial,sans-serif;overflow-x:hidden}
+  header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;gap:10px}
+  h1{margin:0;font-size:clamp(22px,4vw,40px);color:var(--gold);text-shadow:0 3px 0 #92400e}
+  .btn{background:var(--gold);color:var(--ink);border:none;border-radius:12px;padding:12px 20px;
+    font-size:18px;font-weight:700;cursor:pointer;box-shadow:0 4px 0 #b45309;font-family:inherit}
+  .btn:active{transform:translateY(2px);box-shadow:0 2px 0 #b45309}
+  .btn.ghost{background:transparent;color:var(--muted);border:2px solid var(--muted);box-shadow:none;font-size:15px;padding:8px 14px}
+  .btn:disabled{opacity:.4;cursor:default}
+  .wrap{max-width:820px;margin:0 auto;padding:10px 18px 40px}
+  .screen{display:none}
+  .screen.on{display:block}
+  /* start */
+  #start{text-align:center}
+  #start p{font-size:20px;color:var(--muted);line-height:1.5}
+  #nameInput{width:100%;max-width:420px;font-size:22px;padding:12px;border-radius:10px;border:none;margin:10px 0 18px;font-family:inherit}
+  .topics{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:14px 0 22px}
+  .topic{background:#0f2a55;border:3px solid #334e86;border-radius:12px;padding:14px;font-size:18px;font-weight:700;color:#fff;cursor:pointer;font-family:inherit}
+  .topic.sel{border-color:var(--gold);background:#1e3a70}
+  .rules{background:#0f2a55;border-radius:14px;padding:14px 18px;text-align:left;font-size:17px;color:var(--muted);line-height:1.55;margin-top:22px}
+  .rules b{color:#fff}
+  #best{color:var(--gold);font-weight:700;margin-top:12px;font-size:18px}
+  /* hud */
+  .hud{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+  .pill{background:#0f2a55;border-radius:999px;padding:8px 16px;font-size:18px;font-weight:700}
+  .pill span{color:var(--gold)}
+  #streakPill.hot{background:#9a3412;animation:pulse .6s ease}
+  @keyframes pulse{50%{transform:scale(1.12)}}
+  .bar{height:12px;background:#0f2a55;border-radius:999px;overflow:hidden;margin-bottom:14px}
+  .bar div{height:100%;background:var(--gold);width:0;transition:width .4s}
+  /* card */
+  .card{background:var(--card);color:var(--ink);border-radius:20px;padding:24px 26px;box-shadow:0 20px 60px rgba(0,0,0,.4);animation:pop .3s ease}
+  @keyframes pop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+  .meta{display:flex;justify-content:space-between;font-size:16px;font-weight:700;color:var(--blue);gap:8px;flex-wrap:wrap}
+  .retry-tag{color:#b45309}
+  #qtext{font-size:clamp(20px,3.2vw,30px);font-weight:700;margin:14px 0 20px;line-height:1.35}
+  #choices{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .choice{font-size:clamp(17px,2.4vw,21px);text-align:left;padding:14px 16px;border-radius:12px;border:3px solid #cbd5e1;
+    background:#fff;cursor:pointer;font-weight:600;color:var(--ink);font-family:inherit}
+  .choice:hover:not(:disabled){border-color:var(--blue)}
+  .choice b{color:var(--blue);margin-right:8px}
+  .choice.right{background:#dcfce7;border-color:var(--good)}
+  .choice.wrong{background:#fee2e2;border-color:var(--bad)}
+  .choice.gone{opacity:.25;text-decoration:line-through}
+  .choice:disabled{cursor:default}
+  .tools{display:flex;justify-content:space-between;align-items:center;margin-top:16px;gap:10px;flex-wrap:wrap}
+  #helpBtn{background:#e0e7ff;color:var(--blue);box-shadow:0 4px 0 #a5b4fc;font-size:16px}
+  #feedback{min-height:28px;margin-top:16px;font-size:clamp(19px,2.6vw,24px);font-weight:700}
+  #explain{font-size:clamp(16px,2.2vw,20px);color:#334155;line-height:1.45;margin-top:6px}
+  #nextBtn{display:none}
+  /* end */
+  #end{text-align:center}
+  .report{background:var(--card);color:var(--ink);border-radius:20px;padding:24px;margin:16px auto;max-width:560px;text-align:left}
+  .report h2{margin:0 0 6px;text-align:center;color:var(--blue);font-size:28px}
+  .report .row{display:flex;justify-content:space-between;font-size:20px;padding:8px 0;border-bottom:1px solid #e2e8f0}
+  .report .row b{color:var(--ink)}
+  .report .big{text-align:center;font-size:52px;font-weight:900;color:#b45309;margin:6px 0}
+  .report .note{font-size:15px;color:#475569;text-align:center;margin-top:12px}
+  #grade{text-align:center;font-size:24px;font-weight:800;margin:4px 0}
+  .weak{font-size:17px;color:#334155;margin-top:10px;line-height:1.5}
+  canvas#confetti{position:fixed;inset:0;pointer-events:none;z-index:20}
+  @media (max-width:600px){ #choices{grid-template-columns:1fr} .card{padding:18px} }
+</style>
+</head>
+<body>
+<canvas id="confetti"></canvas>
+<header>
+  <h1>Micro Review Challenge</h1>
+  <button class="btn ghost" id="muteBtn">Sound: ON</button>
+</header>
+
+<div class="wrap">
+  <!-- START -->
+  <section id="start" class="screen on">
+    <p>Practice for the FRQ quiz: surplus, elasticity, taxes, rent control, and tariffs.</p>
+    <input id="nameInput" placeholder="Type your first and last name" autocomplete="name">
+    <div style="font-size:18px;font-weight:700">Pick what to practice:</div>
+    <div class="topics" id="topics"></div>
+    <button class="btn" id="startBtn" style="font-size:24px;padding:14px 40px">Start</button>
+    <div id="best"></div>
+    <div class="rules">
+      <b>How it works</b><br>
+      Right on the first try: <b>100 points</b>, plus a <b>streak bonus</b> of 20 more for every right answer in a row (up to +100).<br>
+      Wrong? Read the explanation. That question <b>comes back at the end</b> for half points.<br>
+      You get <b>2 helps</b> per game. A help crosses out two wrong answers.<br>
+      When you finish, <b>take a screenshot</b> of your results and turn it in on Schoology.
+    </div>
+  </section>
+
+  <!-- PLAY -->
+  <section id="play" class="screen">
+    <div class="hud">
+      <div class="pill">Score: <span id="score">0</span></div>
+      <div class="pill" id="streakPill">Streak: <span id="streak">0</span></div>
+      <div class="pill">Question <span id="qnum">1</span> of <span id="qtotal">25</span></div>
+    </div>
+    <div class="bar"><div id="barFill"></div></div>
+    <div class="card" id="card">
+      <div class="meta"><span id="qcat"></span><span id="qtag"></span></div>
+      <div id="qtext"></div>
+      <div id="choices"></div>
+      <div id="feedback"></div>
+      <div id="explain"></div>
+      <div class="tools">
+        <button class="btn" id="helpBtn">Use a help (2 left)</button>
+        <button class="btn" id="nextBtn">Next</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- END -->
+  <section id="end" class="screen">
+    <div class="report">
+      <h2>Micro Review Results</h2>
+      <div class="big" id="finalScore">0</div>
+      <div id="grade"></div>
+      <div class="row"><span>Name</span><b id="rName"></b></div>
+      <div class="row"><span>Topics</span><b id="rTopic"></b></div>
+      <div class="row"><span>Right on first try</span><b id="rFirst"></b></div>
+      <div class="row"><span>Best streak</span><b id="rStreak"></b></div>
+      <div class="row"><span>Helps used</span><b id="rHelps"></b></div>
+      <div class="row"><span>Finished</span><b id="rDate"></b></div>
+      <div class="weak" id="weak"></div>
+      <div class="note">Screenshot this box and turn it in on Schoology.</div>
+    </div>
+    <button class="btn" id="againBtn">Play Again</button>
+  </section>
+</div>
+
+<script>
+/* ---------------- QUESTIONS ---------------- */
+const CATS = [
+ {name:"Surplus & DWL", qs:[
+  {q:"What is consumer surplus?", c:["The extra money sellers make above their cost","What buyers are willing to pay minus what they actually pay","The total amount buyers spend","The tax the government collects"], a:1,
+   e:"Consumer surplus is the gap between what buyers would pay and what they actually pay."},
+  {q:"Demand hits the price axis at $12. Equilibrium is P = $8 and Q = 50. What is consumer surplus?", c:["$400","$200","$100","$50"], a:2,
+   e:"Consumer surplus is the triangle above the price: 1/2 x 50 x ($12 - $8) = $100."},
+  {q:"What does deadweight loss measure?", c:["Money the government loses","Surplus lost from trades that should happen but don't","Profit lost by one firm","The cost of making the good"], a:1,
+   e:"Deadweight loss is the total surplus lost when the market makes fewer (or too many) trades than the efficient amount."},
+  {q:"Supply hits the price axis at $2. Equilibrium is P = $8 and Q = 50. What is producer surplus?", c:["$300","$200","$150","$100"], a:2,
+   e:"Producer surplus is the triangle below the price: 1/2 x 50 x ($8 - $2) = $150."},
+  {q:"At the free market equilibrium (no taxes, no price controls), total surplus is...", c:["As big as it can be, with no deadweight loss","Zero","Split evenly between buyers and sellers every time","Smaller than with a tax"], a:0,
+   e:"A competitive market at equilibrium maximizes total surplus. That's why we call it efficient."}
+ ]},
+ {name:"Elasticity", qs:[
+  {q:"If demand is ELASTIC, then when the price changes...", c:["Quantity demanded barely changes","Quantity demanded changes a lot","Supply shifts","Nothing happens"], a:1,
+   e:"Elastic means buyers are very responsive to price."},
+  {q:"A store raises its price and total revenue FALLS. Demand is...", c:["Elastic","Inelastic","Unit elastic","Perfectly inelastic"], a:0,
+   e:"Total revenue test: price and revenue moved in opposite directions, so demand is elastic."},
+  {q:"Price rises 20%. Quantity demanded falls 10%. What is the elasticity?", c:["2.0, elastic","0.5, inelastic","1.0, unit elastic","10, elastic"], a:1,
+   e:"Elasticity = % change in quantity / % change in price = 10% / 20% = 0.5. Less than 1 means inelastic."},
+  {q:"Which good probably has the MOST INELASTIC demand?", c:["One brand of cereal","Movie tickets","Insulin for a diabetic","Nike sneakers"], a:2,
+   e:"Insulin is a necessity with no good substitutes, so people buy it almost no matter the price."},
+  {q:"At $10 a theater sells 200 tickets. At $8 it sells 300. To get MORE total revenue, the theater should...", c:["Charge $10","Charge $8","It doesn't matter","Stop selling tickets"], a:1,
+   e:"$10 x 200 = $2,000. $8 x 300 = $2,400. Lowering the price brings in more money, so demand is elastic here."}
+ ]},
+ {name:"Taxes & Subsidies", qs:[
+  {q:"A per-unit tax on sellers shifts which curve, and which way?", c:["Demand shifts right","Supply shifts left (up) by the tax","Supply shifts right","Demand shifts left"], a:1,
+   e:"The tax raises sellers' cost on every unit, so supply shifts up by the amount of the tax."},
+  {q:"There is a $3 per-unit tax. After the tax, 500 units are sold. How much tax revenue?", c:["$1,500","$500","$3","$150"], a:0,
+   e:"Tax revenue = tax x quantity sold = $3 x 500 = $1,500."},
+  {q:"If demand is PERFECTLY INELASTIC, who pays the tax?", c:["Sellers pay all of it","They split it evenly","Buyers pay all of it","The government pays it"], a:2,
+   e:"Buyers will buy the same amount no matter what, so sellers can pass the whole tax on to them."},
+  {q:"A $4 tax makes quantity fall from 300 to 200. What is the deadweight loss?", c:["$400","$200","$800","$100"], a:1,
+   e:"Deadweight loss is the triangle: 1/2 x 100 lost units x $4 = $200."},
+  {q:"A per-unit subsidy to sellers leads to...", c:["Less quantity than is efficient","The efficient quantity, so no DWL","More quantity than is efficient, creating DWL","No change at all"], a:2,
+   e:"The subsidy pushes quantity past equilibrium. Those extra units cost more to make than buyers value them."}
+ ]},
+ {name:"Rent Control", qs:[
+  {q:"Rent control is an example of a...", c:["Price floor","Price ceiling","Tax","Tariff"], a:1,
+   e:"Rent control is a legal MAXIMUM price, so it's a price ceiling."},
+  {q:"For a price ceiling to be BINDING, it must be set...", c:["Above equilibrium","At equilibrium","Below equilibrium","Anywhere"], a:2,
+   e:"A ceiling only matters if it's below the equilibrium price."},
+  {q:"A binding price ceiling causes a...", c:["Shortage","Surplus","Bigger quantity sold","Tax"], a:0,
+   e:"At the low price, quantity demanded is greater than quantity supplied."},
+  {q:"Equilibrium rent is $1,800. The city sets a max rent of $2,200. What happens?", c:["Big shortage","Big surplus","Nothing, the ceiling is not binding","Rents go up to $2,200"], a:2,
+   e:"The ceiling is above equilibrium, so the market just stays at $1,800."},
+  {q:"Under rent control, which group is CLEARLY worse off?", c:["Renters who got an apartment at the lower rent","Renters who can't find an apartment at all","The government","Nobody"], a:1,
+   e:"Those renters lose out completely. They would have paid the market rent, but there are now fewer apartments available."}
+ ]},
+ {name:"Tariffs & Quotas", qs:[
+  {q:"A tariff is...", c:["A limit on the number of imports","A tax on imports","A subsidy for exports","A price ceiling"], a:1,
+   e:"A tariff is a tax on imported goods."},
+  {q:"An import quota is...", c:["A tax on imports","A limit on the quantity of imports","A subsidy","A price floor"], a:1,
+   e:"A quota caps how many units can be imported."},
+  {q:"Who GAINS from a tariff?", c:["Domestic buyers","Domestic producers","Foreign producers","Nobody"], a:1,
+   e:"The price at home goes up, so domestic producers sell more at a higher price."},
+  {q:"A $10 tariff is placed on imports. After the tariff, 300 units are imported. Tariff revenue?", c:["$30","$300","$3,000","$10,000"], a:2,
+   e:"$10 x 300 imported units = $3,000. Only imported units are taxed."},
+  {q:"A tariff and a quota can raise the price by the same amount. What's the BIG difference?", c:["The quota creates no deadweight loss","The tariff gives the government revenue, the quota does not","The quota helps buyers","There is no difference"], a:1,
+   e:"With a quota, that money goes to whoever holds the import licenses instead of the government."}
+ ]}
+];
+
+/* ---------------- SOUND (made in the browser, no files) ---------------- */
+let actx=null, muted=false, noiseBuf=null;
+function ctx(){
+  if(!actx){ actx=new (window.AudioContext||window.webkitAudioContext)();
+    noiseBuf=actx.createBuffer(1,actx.sampleRate,actx.sampleRate);
+    const d=noiseBuf.getChannelData(0); for(let i=0;i<d.length;i++) d[i]=Math.random()*2-1; }
+  if(actx.state==="suspended") actx.resume();
+  return actx;
+}
+function tone(freq,start,dur,type="sine",vol=0.25){
+  const c=ctx(), o=c.createOscillator(), g=c.createGain();
+  o.type=type; o.frequency.value=freq;
+  g.gain.setValueAtTime(0.0001,start);
+  g.gain.exponentialRampToValueAtTime(vol,start+0.02);
+  g.gain.exponentialRampToValueAtTime(0.0001,start+dur);
+  o.connect(g).connect(c.destination); o.start(start); o.stop(start+dur+0.05);
+}
+function sClick(){ if(muted)return; const t=ctx().currentTime; tone(660,t,0.08,"sine",0.2); }
+function sCorrect(){ if(muted)return; const t=ctx().currentTime;
+  [523.25,659.25,783.99,1046.5].forEach((f,i)=>tone(f,t+i*0.1,0.35,"triangle",0.3));
+  tone(1046.5,t+0.4,0.6,"sine",0.2); }
+function sWrong(){ if(muted)return; const c=ctx(), t=c.currentTime;
+  [0,0.28].forEach(off=>{ const o=c.createOscillator(), g=c.createGain(), lp=c.createBiquadFilter();
+    o.type="sawtooth"; o.frequency.value=110; lp.type="lowpass"; lp.frequency.value=900;
+    g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(0.3,t+off+0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001,t+off+0.25);
+    o.connect(lp).connect(g).connect(c.destination); o.start(t+off); o.stop(t+off+0.3); }); }
+function sFanfare(){ if(muted)return; const t=ctx().currentTime;
+  [523,523,523,698,880,1046].forEach((f,i)=>tone(f,t+i*0.12,i===5?0.6:0.14,"square",0.15)); }
+function sWhoosh(){ if(muted)return; const c=ctx(), t=c.currentTime, s=c.createBufferSource(), f=c.createBiquadFilter(), g=c.createGain();
+  s.buffer=noiseBuf; f.type="bandpass"; f.frequency.setValueAtTime(400,t); f.frequency.exponentialRampToValueAtTime(3000,t+0.3);
+  g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.25,t+0.05); g.gain.exponentialRampToValueAtTime(0.0001,t+0.35);
+  s.connect(f).connect(g).connect(c.destination); s.start(t,0,0.4); }
+function sApplause(dur=2.8,loud=0.5){ if(muted)return; const c=ctx(), t0=c.currentTime+0.05;
+  const claps=Math.floor(dur*55);
+  for(let i=0;i<claps;i++){
+    const t=t0+Math.random()*dur, frac=(t-t0)/dur;
+    const amp=loud*Math.min(1,frac*6)*Math.pow(1-frac,0.7)+0.001;
+    const src=c.createBufferSource(); src.buffer=noiseBuf;
+    const bp=c.createBiquadFilter(); bp.type="bandpass"; bp.frequency.value=900+Math.random()*1800; bp.Q.value=0.9;
+    const g=c.createGain(); g.gain.setValueAtTime(0.0001,t);
+    g.gain.linearRampToValueAtTime(amp,t+0.003); g.gain.exponentialRampToValueAtTime(0.0001,t+0.07);
+    src.connect(bp).connect(g).connect(c.destination); src.start(t,Math.random()*0.8,0.09);
+  }
+  for(let k=0;k<3;k++){ const t=t0+0.3+Math.random()*1.2, o=c.createOscillator(), g=c.createGain();
+    o.type="sine"; o.frequency.setValueAtTime(900+Math.random()*300,t); o.frequency.exponentialRampToValueAtTime(1700+Math.random()*400,t+0.35);
+    g.gain.setValueAtTime(0.0001,t); g.gain.exponentialRampToValueAtTime(0.06,t+0.05); g.gain.exponentialRampToValueAtTime(0.0001,t+0.45);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t+0.5); }
+}
+
+/* ---------------- CONFETTI ---------------- */
+const cv=document.getElementById("confetti"), cx=cv.getContext("2d"); let parts=[], animating=false;
+function sizeCanvas(){cv.width=innerWidth;cv.height=innerHeight} addEventListener("resize",sizeCanvas); sizeCanvas();
+function confetti(n=160){
+  const cols=["#fbbf24","#22c55e","#3b82f6","#ef4444","#a855f7","#f97316"];
+  for(let i=0;i<n;i++) parts.push({x:innerWidth/2+(Math.random()-0.5)*200,y:innerHeight*0.45,
+    vx:(Math.random()-0.5)*16,vy:-Math.random()*16-4,s:6+Math.random()*8,r:Math.random()*6,vr:(Math.random()-0.5)*0.3,
+    c:cols[Math.floor(Math.random()*cols.length)],life:0});
+  if(!animating){animating=true;requestAnimationFrame(drawConfetti)}
+}
+function drawConfetti(){
+  cx.clearRect(0,0,cv.width,cv.height);
+  parts.forEach(p=>{p.vy+=0.35;p.vx*=0.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;p.life++;
+    cx.save();cx.translate(p.x,p.y);cx.rotate(p.r);cx.fillStyle=p.c;cx.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);cx.restore();});
+  parts=parts.filter(p=>p.y<innerHeight+40&&p.life<400);
+  if(parts.length) requestAnimationFrame(drawConfetti); else {animating=false;cx.clearRect(0,0,cv.width,cv.height);}
+}
+
+/* ---------------- STORAGE (best score, safe if blocked) ---------------- */
+function getBest(){ try{ return JSON.parse(localStorage.getItem("microReviewBest")||"null"); }catch(e){ return null; } }
+function setBest(v){ try{ localStorage.setItem("microReviewBest",JSON.stringify(v)); }catch(e){} }
+
+/* ---------------- GAME ---------------- */
+const $=id=>document.getElementById(id);
+let chosen=new Set([0,1,2,3,4]);
+let queue=[], retry=[], pos=0, total=0, score=0, streak=0, bestStreak=0, helps=2, firstRight=0, firstTotal=0,
+    current=null, missedByCat={}, playerName="", inRetry=false;
+
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]} return a; }
+
+function renderTopics(){
+  const box=$("topics"); box.innerHTML="";
+  const all=document.createElement("button"); all.className="topic"+(chosen.size===5?" sel":""); all.textContent="Everything (25 questions)";
+  all.onclick=()=>{ sClick(); chosen=new Set([0,1,2,3,4]); renderTopics(); }; box.appendChild(all);
+  CATS.forEach((c,i)=>{ const b=document.createElement("button");
+    b.className="topic"+(chosen.size<5&&chosen.has(i)?" sel":""); b.textContent=c.name;
+    b.onclick=()=>{ sClick();
+      if(chosen.size===5) chosen=new Set([i]);
+      else { chosen.has(i)?chosen.delete(i):chosen.add(i); if(chosen.size===0) chosen=new Set([0,1,2,3,4]); }
+      renderTopics(); };
+    box.appendChild(b); });
+}
+function showBest(){ const b=getBest(); $("best").textContent=b?("Your best on this device: "+b.score+" points"):""; }
+renderTopics(); showBest();
+
+$("muteBtn").onclick=()=>{ muted=!muted; $("muteBtn").textContent="Sound: "+(muted?"OFF":"ON"); if(!muted) sClick(); };
+
+function show(id){ document.querySelectorAll(".screen").forEach(s=>s.classList.toggle("on",s.id===id)); window.scrollTo(0,0); }
+
+$("startBtn").onclick=()=>{
+  const nm=$("nameInput").value.trim();
+  if(!nm){ $("nameInput").focus(); $("nameInput").placeholder="Please type your name first"; sWrong(); return; }
+  playerName=nm; ctx(); sFanfare();
+  queue=[]; [...chosen].sort().forEach(ci=>CATS[ci].qs.forEach((q,qi)=>queue.push({ci,q})));
+  shuffle(queue);
+  retry=[]; pos=0; total=queue.length; score=0; streak=0; bestStreak=0; helps=2; firstRight=0; firstTotal=queue.length;
+  missedByCat={}; inRetry=false;
+  $("qtotal").textContent=total; $("score").textContent=0; $("streak").textContent=0;
+  show("play"); loadQ();
+};
+
+function loadQ(){
+  if(pos>=queue.length){
+    if(!inRetry && retry.length){ inRetry=true; queue=shuffle(retry.slice()); retry=[]; pos=0; total=queue.length;
+      $("qtotal").textContent=total; retryIntro(); return; }
+    return endGame();
+  }
+  current={...queue[pos], answered:false, helped:false};
+  $("qnum").textContent=pos+1;
+  $("barFill").style.width=(pos/total*100)+"%";
+  $("qcat").textContent=CATS[current.ci].name;
+  $("qtag").innerHTML=inRetry?'<span class="retry-tag">Second chance (half points)</span>':"";
+  $("qtext").textContent=current.q.q; $("feedback").textContent=""; $("explain").textContent="";
+  $("nextBtn").style.display="none";
+  $("helpBtn").style.display="inline-block"; $("helpBtn").disabled=helps===0;
+  $("helpBtn").textContent="Use a help ("+helps+" left)";
+  const ch=$("choices"); ch.innerHTML="";
+  current.q.c.forEach((txt,i)=>{ const b=document.createElement("button"); b.className="choice";
+    b.innerHTML="<b>"+(i+1)+".</b>"; b.appendChild(document.createTextNode(txt));
+    b.onclick=()=>answer(i); ch.appendChild(b); });
+  const card=$("card"); card.style.animation="none"; void card.offsetWidth; card.style.animation="";
+}
+
+function retryIntro(){
+  $("barFill").style.width="0%"; $("qnum").textContent="-";
+  $("qcat").textContent="Round 2"; $("qtag").textContent="";
+  $("qtext").textContent="Round 2: Second Chances. Here come the "+queue.length+" question"+(queue.length>1?"s":"")+" you missed. Each is worth 50 points now.";
+  $("choices").innerHTML=""; $("feedback").textContent=""; $("explain").textContent="";
+  $("helpBtn").style.display="none"; $("nextBtn").style.display="inline-block"; $("nextBtn").textContent="Let's go";
+  sWhoosh();
+}
+
+$("helpBtn").onclick=()=>{
+  if(!current||current.answered||current.helped||helps===0) return;
+  helps--; current.helped=true; sWhoosh();
+  const btns=[...$("choices").querySelectorAll(".choice")];
+  const wrongs=shuffle([0,1,2,3].filter(i=>i!==current.q.a)).slice(0,2);
+  wrongs.forEach(i=>{btns[i].classList.add("gone");btns[i].disabled=true;});
+  $("helpBtn").disabled=true; $("helpBtn").textContent="Help used ("+helps+" left)";
+};
+
+function answer(i){
+  if(!current||current.answered) return;
+  current.answered=true;
+  const q=current.q, btns=$("choices").querySelectorAll(".choice");
+  btns.forEach(b=>b.disabled=true); btns[q.a].classList.add("right");
+  $("helpBtn").style.display="none";
+  if(i===q.a){
+    let pts;
+    if(inRetry){ pts=50; }
+    else { firstRight++; pts=100+Math.min(streak,5)*20; }
+    streak++; bestStreak=Math.max(bestStreak,streak);
+    score+=pts;
+    const cheers=["Nailed it!","Correct!","That's right!","You got it!","Great job!"];
+    $("feedback").style.color="#15803d";
+    $("feedback").textContent=cheers[Math.floor(Math.random()*cheers.length)]+"  +"+pts;
+    sCorrect(); setTimeout(()=>sApplause(streak>=5?3.2:2.4,streak>=5?0.6:0.45),250); confetti(streak>=5?240:150);
+    if(streak>=3){ const p=$("streakPill"); p.classList.remove("hot"); void p.offsetWidth; p.classList.add("hot"); }
+  } else {
+    btns[i].classList.add("wrong"); streak=0;
+    $("streakPill").classList.remove("hot");
+    $("feedback").style.color="#b91c1c";
+    $("feedback").textContent=inRetry?"Not quite. Read why below.":"Not quite. This one will come back at the end.";
+    if(!inRetry) retry.push({ci:current.ci,q:current.q});
+    if(!inRetry) missedByCat[current.ci]=(missedByCat[current.ci]||0)+1;
+    sWrong();
+  }
+  $("score").textContent=score; $("streak").textContent=streak;
+  $("explain").textContent=q.e;
+  $("nextBtn").textContent=(pos+1>=queue.length && (inRetry||!retry.length))?"See My Results":"Next";
+  $("nextBtn").style.display="inline-block";
+  $("barFill").style.width=((pos+1)/total*100)+"%";
+}
+
+$("nextBtn").onclick=()=>{ sClick();
+  if(current && current.answered){ pos++; current=null; loadQ(); }
+  else { loadQ(); }
+};
+
+function endGame(){
+  show("end");
+  const pct=Math.round(firstRight/firstTotal*100);
+  $("finalScore").textContent=score+" pts";
+  $("grade").textContent=pct>=90?"Outstanding! You're ready.":pct>=75?"Strong work. Review what you missed.":pct>=50?"Getting there. Play again to lock it in.":"Review the decks, then play again.";
+  $("grade").style.color=pct>=75?"#15803d":pct>=50?"#b45309":"#b91c1c";
+  $("rName").textContent=playerName;
+  $("rTopic").textContent=chosen.size===5?"All 5 topics":[...chosen].sort().map(i=>CATS[i].name).join(", ");
+  $("rFirst").textContent=firstRight+" of "+firstTotal+" ("+pct+"%)";
+  $("rStreak").textContent=bestStreak;
+  $("rHelps").textContent=(2-helps)+" of 2";
+  const d=new Date();
+  $("rDate").textContent=d.toLocaleDateString("en-US",{month:"short",day:"numeric"})+", "+d.toLocaleTimeString("en-US",{hour:"numeric",minute:"2-digit"});
+  const weak=Object.keys(missedByCat).sort((a,b)=>missedByCat[b]-missedByCat[a]);
+  $("weak").textContent=weak.length?("Study more: "+weak.map(ci=>CATS[ci].name+" ("+missedByCat[ci]+" missed)").join(", ")):"You didn't miss a single question on the first try!";
+  const b=getBest(); if(!b||score>b.score) setBest({score});
+  sFanfare(); setTimeout(()=>sApplause(4,0.6),500);
+  confetti(300); setTimeout(()=>confetti(250),900); setTimeout(()=>confetti(250),1800);
+}
+$("againBtn").onclick=()=>{ sClick(); showBest(); show("start"); };
+
+document.addEventListener("keydown",e=>{
+  if(!$("play").classList.contains("on")) { if(e.key==="Enter" && $("start").classList.contains("on")) $("startBtn").click(); return; }
+  if(current && !current.answered && ["1","2","3","4"].includes(e.key)){
+    const b=$("choices").querySelectorAll(".choice")[+e.key-1]; if(b && !b.disabled) answer(+e.key-1);
+  } else if($("nextBtn").style.display!=="none" && (e.key==="Enter"||e.key===" ")){ e.preventDefault(); $("nextBtn").click(); }
+});
+</script>
+</body>
+</html>
